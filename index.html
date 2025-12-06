@@ -1,0 +1,589 @@
+<!-- Save as: satellite_router.html and open in browser -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛰️ Virtual Satellite Router</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #0f172a;
+            --card: #1e293b;
+            --text: #f1f5f9;
+            --muted: #94a3b8;
+        }
+        body {
+            background-color: var(--dark);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        .satellite-card {
+            background: var(--card);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            transition: transform 0.3s;
+        }
+        .satellite-card:hover {
+            transform: translateY(-5px);
+        }
+        .stat-badge {
+            font-size: 1.2rem;
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+        .device-item {
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--primary);
+        }
+        .signal-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 10px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .traffic-bar {
+            height: 8px;
+            background: linear-gradient(90deg, var(--primary), var(--success));
+            border-radius: 4px;
+            margin: 10px 0;
+            transition: width 0.5s;
+        }
+        .btn-action {
+            background: linear-gradient(135deg, var(--primary), #6366f1);
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .btn-action:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+        }
+        .log-entry {
+            padding: 8px 12px;
+            margin: 5px 0;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            border-left: 3px solid var(--primary);
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        .satellite-animation {
+            font-size: 3rem;
+            animation: orbit 20s linear infinite;
+            display: inline-block;
+        }
+        @keyframes orbit {
+            from { transform: rotate(0deg) translateX(50px) rotate(0deg); }
+            to { transform: rotate(360deg) translateX(50px) rotate(-360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h1 class="display-4">
+                        <i class="fas fa-satellite"></i> Virtual Satellite Router
+                    </h1>
+                    <div class="d-flex gap-2">
+                        <button class="btn-action" onclick="togglePower()" id="powerBtn">
+                            <i class="fas fa-power-off"></i> POWER ON
+                        </button>
+                        <button class="btn btn-outline-light" onclick="showAddDevice()">
+                            <i class="fas fa-plus"></i> Add Device
+                        </button>
+                    </div>
+                </div>
+                <p class="text-muted">Interactive satellite internet simulation - No hardware required</p>
+            </div>
+        </div>
+
+        <!-- Status Row -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="satellite-card">
+                    <h5><i class="fas fa-satellite-dish"></i> Satellite Status</h5>
+                    <div class="text-center my-4">
+                        <div class="satellite-animation" id="satelliteIcon">🛰️</div>
+                    </div>
+                    <div class="mb-3">
+                        <span class="text-muted">Connection:</span>
+                        <span class="badge bg-success" id="connectionStatus">Connected</span>
+                    </div>
+                    <div class="mb-2">
+                        <span class="text-muted">Signal:</span>
+                        <span class="signal-indicator bg-success" id="signalIndicator"></span>
+                        <span id="signalValue">85%</span>
+                    </div>
+                    <div class="traffic-bar" id="signalBar" style="width: 85%"></div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="satellite-card">
+                    <h5><i class="fas fa-chart-line"></i> Live Bandwidth</h5>
+                    <canvas id="trafficChart" height="150"></canvas>
+                    <div class="row mt-3">
+                        <div class="col-4">
+                            <div class="text-center">
+                                <h3 id="downloadSpeed">25.4</h3>
+                                <small class="text-muted">Download Mbps</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-center">
+                                <h3 id="uploadSpeed">5.2</h3>
+                                <small class="text-muted">Upload Mbps</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-center">
+                                <h3 id="latencyValue">680</h3>
+                                <small class="text-muted">Latency ms</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="satellite-card">
+                    <h5><i class="fas fa-microchip"></i> System Stats</h5>
+                    <div class="mb-3">
+                        <span class="text-muted">Connected Devices:</span>
+                        <h2 id="deviceCount">5</h2>
+                    </div>
+                    <div class="mb-3">
+                        <span class="text-muted">Data Used:</span>
+                        <h4 id="dataUsed">15.2/100 GB</h4>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-primary" id="dataProgress" style="width: 15%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-2">
+                        <small class="text-muted">Uptime: <span id="uptime">2h 30m</span></small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Devices & Controls -->
+        <div class="row">
+            <div class="col-md-8">
+                <div class="satellite-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5><i class="fas fa-laptop-house"></i> Connected Devices</h5>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-primary" onclick="refreshDevices()">
+                                <i class="fas fa-sync"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-success" onclick="showAddDevice()">
+                                <i class="fas fa-plus"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                    <div id="devicesList">
+                        <!-- Devices will be added here -->
+                    </div>
+                </div>
+
+                <!-- Activity Log -->
+                <div class="satellite-card mt-4">
+                    <h5><i class="fas fa-clipboard-list"></i> Activity Log</h5>
+                    <div id="activityLog" style="max-height: 200px; overflow-y: auto;">
+                        <!-- Log entries will be added here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <!-- Quick Controls -->
+                <div class="satellite-card">
+                    <h5><i class="fas fa-sliders-h"></i> Quick Controls</h5>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary" onclick="boostSignal()">
+                            <i class="fas fa-bolt"></i> Boost Signal
+                        </button>
+                        <button class="btn btn-warning" onclick="optimizeLatency()">
+                            <i class="fas fa-tachometer-alt"></i> Optimize Latency
+                        </button>
+                        <button class="btn btn-info" onclick="applyQoS()">
+                            <i class="fas fa-filter"></i> Apply QoS Rules
+                        </button>
+                        <button class="btn btn-success" onclick="runDiagnostics()">
+                            <i class="fas fa-stethoscope"></i> Run Diagnostics
+                        </button>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <h6><i class="fas fa-cogs"></i> QoS Settings</h6>
+                    <div class="mb-3">
+                        <label class="form-label">Priority Traffic</label>
+                        <select class="form-select bg-dark text-white border-secondary" id="qosSelect">
+                            <option>VoIP & Video Calls</option>
+                            <option>Gaming & Streaming</option>
+                            <option>Web Browsing</option>
+                            <option>Downloads</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-outline-primary w-100" onclick="updateQoS()">
+                        <i class="fas fa-save"></i> Save QoS Settings
+                    </button>
+                </div>
+
+                <!-- Data Usage -->
+                <div class="satellite-card mt-4">
+                    <h5><i class="fas fa-database"></i> Data Usage</h5>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span>Monthly Limit:</span>
+                            <span>100 GB</span>
+                        </div>
+                        <div class="progress" style="height: 15px;">
+                            <div class="progress-bar bg-success" id="monthlyData" style="width: 15%"></div>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <button class="btn btn-sm btn-outline-warning" onclick="resetData()">
+                            <i class="fas fa-redo"></i> Reset Counter
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Device Modal -->
+    <div class="modal fade" id="addDeviceModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark text-white">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title"><i class="fas fa-plus"></i> Add New Device</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Device Name</label>
+                        <input type="text" class="form-control bg-secondary border-secondary text-white" 
+                               id="deviceName" placeholder="e.g., John's iPhone">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Device Type</label>
+                        <select class="form-select bg-secondary border-secondary text-white" id="deviceType">
+                            <option>Smartphone</option>
+                            <option>Laptop</option>
+                            <option>Tablet</option>
+                            <option>Smart TV</option>
+                            <option>Gaming Console</option>
+                            <option>IoT Device</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">MAC Address (Optional)</label>
+                        <input type="text" class="form-control bg-secondary border-secondary text-white" 
+                               placeholder="00:1A:2B:3C:4D:5E">
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="addNewDevice()">Add Device</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Initialize variables
+        let isRunning = false;
+        let devices = [
+            { name: "John's iPhone", type: "Smartphone", ip: "192.168.1.101", traffic: 2.5 },
+            { name: "Work Laptop", type: "Laptop", ip: "192.168.1.102", traffic: 8.2 },
+            { name: "Living Room TV", type: "Smart TV", ip: "192.168.1.103", traffic: 15.7 },
+            { name: "Gaming Console", type: "Gaming Console", ip: "192.168.1.104", traffic: 12.3 },
+            { name: "Smart Thermostat", type: "IoT Device", ip: "192.168.1.105", traffic: 0.8 }
+        ];
+        let dataUsed = 15.2;
+        let latency = 680;
+        let signalStrength = 85;
+        let startTime = Date.now();
+
+        // Traffic Chart
+        const ctx = document.getElementById('trafficChart').getContext('2d');
+        const trafficChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 20}, (_, i) => i + 's'),
+                datasets: [{
+                    label: 'Bandwidth',
+                    data: Array.from({length: 20}, () => Math.random() * 30 + 10),
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255,255,255,0.1)' },
+                        ticks: { color: '#94a3b8' }
+                    },
+                    x: {
+                        grid: { color: 'rgba(255,255,255,0.1)' },
+                        ticks: { color: '#94a3b8' }
+                    }
+                }
+            }
+        });
+
+        // Initialize display
+        function initializeDisplay() {
+            updateDevicesList();
+            updateActivityLog("🚀 Virtual Satellite Router initialized");
+            updateActivityLog("📡 Ready to establish satellite connection");
+            updateUptime();
+            setInterval(updateUptime, 60000);
+            setInterval(updateTraffic, 1000);
+        }
+
+        // Toggle power
+        function togglePower() {
+            const btn = document.getElementById('powerBtn');
+            const status = document.getElementById('connectionStatus');
+            const icon = document.getElementById('satelliteIcon');
+            
+            if (!isRunning) {
+                isRunning = true;
+                btn.innerHTML = '<i class="fas fa-power-off"></i> POWER OFF';
+                btn.classList.remove('btn-action');
+                btn.classList.add('btn-danger');
+                status.className = 'badge bg-success';
+                status.textContent = 'Connected';
+                icon.style.color = '#10b981';
+                updateActivityLog('✅ Satellite router powered ON');
+                updateActivityLog('📡 Connected to virtual satellite network');
+                updateActivityLog('🌐 DHCP server started on 192.168.1.1');
+            } else {
+                isRunning = false;
+                btn.innerHTML = '<i class="fas fa-power-off"></i> POWER ON';
+                btn.classList.remove('btn-danger');
+                btn.classList.add('btn-action');
+                status.className = 'badge bg-danger';
+                status.textContent = 'Disconnected';
+                icon.style.color = '#ef4444';
+                updateActivityLog('⏹️ Satellite router powered OFF');
+            }
+        }
+
+        // Update traffic simulation
+        function updateTraffic() {
+            if (!isRunning) return;
+            
+            // Update random values
+            const download = (Math.random() * 20 + 15).toFixed(1);
+            const upload = (Math.random() * 5 + 3).toFixed(1);
+            latency = Math.max(400, 600 + Math.random() * 200 - 100);
+            signalStrength = Math.max(50, Math.min(95, signalStrength + Math.random() * 2 - 1));
+            
+            // Update UI
+            document.getElementById('downloadSpeed').textContent = download;
+            document.getElementById('uploadSpeed').textContent = upload;
+            document.getElementById('latencyValue').textContent = Math.round(latency);
+            document.getElementById('signalValue').textContent = Math.round(signalStrength) + '%';
+            document.getElementById('signalBar').style.width = signalStrength + '%';
+            
+            // Update chart
+            trafficChart.data.datasets[0].data.push(parseFloat(download) + parseFloat(upload));
+            trafficChart.data.datasets[0].data.shift();
+            trafficChart.update();
+            
+            // Randomly log events
+            if (Math.random() < 0.3) {
+                const events = [
+                    '📥 Download: 5.2 MB from server',
+                    '📤 Upload: 2.1 MB to cloud storage',
+                    '🎬 Streaming: 1080p video',
+                    '🎮 Gaming: Low latency mode active',
+                    '📞 VoIP: HD voice call in progress',
+                    '🌐 Browsing: Secure HTTPS connection'
+                ];
+                updateActivityLog(events[Math.floor(Math.random() * events.length)]);
+            }
+        }
+
+        // Update devices list
+        function updateDevicesList() {
+            const list = document.getElementById('devicesList');
+            list.innerHTML = '';
+            devices.forEach(device => {
+                const trafficColor = device.traffic > 10 ? 'warning' : device.traffic > 5 ? 'info' : 'success';
+                list.innerHTML += `
+                    <div class="device-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">
+                                    <i class="fas fa-${getDeviceIcon(device.type)}"></i> ${device.name}
+                                </h6>
+                                <small class="text-muted">${device.type} • ${device.ip}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-${trafficColor}">${device.traffic.toFixed(1)} Mbps</span>
+                                <div class="btn-group btn-group-sm mt-1">
+                                    <button class="btn btn-outline-primary btn-sm" onclick="speedBoost('${device.name}')">
+                                        <i class="fas fa-bolt"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm" onclick="removeDevice('${device.name}')">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="progress mt-2" style="height: 5px;">
+                            <div class="progress-bar bg-${trafficColor}" style="width: ${Math.min(100, device.traffic * 5)}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('deviceCount').textContent = devices.length;
+        }
+
+        function getDeviceIcon(type) {
+            const icons = {
+                'Smartphone': 'mobile-alt',
+                'Laptop': 'laptop',
+                'Tablet': 'tablet-alt',
+                'Smart TV': 'tv',
+                'Gaming Console': 'gamepad',
+                'IoT Device': 'home'
+            };
+            return icons[type] || 'wifi';
+        }
+
+        // Add new device
+        function showAddDevice() {
+            new bootstrap.Modal(document.getElementById('addDeviceModal')).show();
+        }
+
+        function addNewDevice() {
+            const name = document.getElementById('deviceName').value || `Device ${devices.length + 1}`;
+            const type = document.getElementById('deviceType').value;
+            const ip = `192.168.1.${100 + devices.length}`;
+            const traffic = (Math.random() * 15).toFixed(1);
+            
+            devices.push({ name, type, ip, traffic: parseFloat(traffic) });
+            updateDevicesList();
+            updateActivityLog(`✅ Added new device: ${name} (${type})`);
+            document.getElementById('addDeviceModal').querySelector('.btn-close').click();
+        }
+
+        // Device actions
+        function speedBoost(deviceName) {
+            updateActivityLog(`⚡ Speed boost applied to: ${deviceName}`);
+            alert(`Prioritizing bandwidth for ${deviceName}!\nQoS rules updated.`);
+        }
+
+        function removeDevice(deviceName) {
+            devices = devices.filter(d => d.name !== deviceName);
+            updateDevicesList();
+            updateActivityLog(`❌ Removed device: ${deviceName}`);
+        }
+
+        // Control functions
+        function boostSignal() {
+            if (signalStrength < 95) {
+                signalStrength += 10;
+                updateActivityLog('📡 Signal boosted! +10% strength');
+                alert('Satellite signal boosted successfully!');
+            } else {
+                alert('Signal already at maximum strength!');
+            }
+        }
+
+        function optimizeLatency() {
+            latency = Math.max(400, latency * 0.8);
+            updateActivityLog('⚡ Latency optimized! -20% improvement');
+            alert(`Latency optimized to ${Math.round(latency)}ms!`);
+        }
+
+        function applyQoS() {
+            updateActivityLog('⚙️ Quality of Service rules applied');
+            alert('QoS rules applied!\nTraffic prioritized for real-time applications.');
+        }
+
+        function runDiagnostics() {
+            updateActivityLog('🔍 Running network diagnostics...');
+            setTimeout(() => {
+                updateActivityLog('✅ Diagnostics complete: All systems normal');
+                alert('Diagnostics complete!\nAll systems functioning normally.');
+            }, 1500);
+        }
+
+        function updateQoS() {
+            const priority = document.getElementById('qosSelect').value;
+            updateActivityLog(`⚙️ QoS updated: ${priority} traffic prioritized`);
+            alert(`QoS settings saved!\n${priority} now has highest priority.`);
+        }
+
+        function resetData() {
+            dataUsed = 0;
+            updateActivityLog('🔄 Data usage counter reset');
+            alert('Data usage counter has been reset to 0 GB.');
+        }
+
+        function refreshDevices() {
+            updateActivityLog('🔄 Refreshing device list...');
+            updateDevicesList();
+        }
+
+        // Update activity log
+        function updateActivityLog(message) {
+            const log = document.getElementById('activityLog');
+            const timestamp = new Date().toLocaleTimeString();
+            log.innerHTML += `<div class="log-entry">[${timestamp}] ${message}</div>`;
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // Update uptime
+        function updateUptime() {
+            const elapsed = Date.now() - startTime;
+            const hours = Math.floor(elapsed / 3600000);
+            const minutes = Math.floor((elapsed % 3600000) / 60000);
+            document.getElementById('uptime').textContent = `${hours}h ${minutes}m`;
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', initializeDisplay);
+    </script>
+</body>
+</html>
