@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Create Account</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      width: 300px;
+      text-align: center;
+    }
+
+    input {
+      width: 90%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <h2>Create Account</h2>
+
+    <input type="email" id="email"
+      placeholder="Enter your email" required>
+
+    <input type="password" id="password"
+      placeholder="Enter your password" required>
+
+    <button onclick="createAccount()">
+      Create Account
+    </button>
+
+    <p id="message"></p>
+  </div>
+
+  <script type="module">
+
+    // [FIREBASE CODE #1] - Your config (unchanged)
+    const firebaseConfig = {
+      apiKey: "AIzaSyCi6uTEkVqb4wruX9mxh0DBxVg21DOwiUs",
+      authDomain: "button-test-c1888.firebaseapp.com",
+      projectId: "button-test-c1888",
+      storageBucket: "button-test-c1888.firebasestorage.app",
+      messagingSenderId: "272436283045",
+      appId: "1:272436283045:web:3f6fb8e2a6624d0826ef4c"
+    };
+
+    const BASE = "https://www.gstatic.com/firebasejs/13.4.0/";
+    let auth, createUser;
+
+    // Loads Firebase only when needed, so createAccount ALWAYS exists
+    async function loadFirebase() {
+      if (auth) return;
+      const { initializeApp } = await import(BASE + "firebase-app.js");
+      const authLib = await import(BASE + "firebase-auth.js");
+      const app = initializeApp(firebaseConfig);   // [FIREBASE CODE #1]
+      auth = authLib.getAuth(app);
+      createUser = authLib.createUserWithEmailAndPassword;
+    }
+
+    window.createAccount = async function () {
+      let email = document.getElementById("email").value;
+      let password = document.getElementById("password").value;
+      let message = document.getElementById("message");
+
+      if (email === "" || password === "") {
+        message.textContent = "Please fill in all fields.";
+        message.style.color = "red";
+      }
+      else if (password.length < 8) {
+        message.textContent = "Password must be at least 8 characters.";
+        message.style.color = "red";
+      }
+      else {
+        // [FIREBASE CODE #2] - account creation
+        try {
+          await loadFirebase();
+          const userCredential = await createUser(auth, email, password);
+          console.log("createUserWithEmail:success", userCredential.user);
+          message.textContent = "Account created successfully!";
+          message.style.color = "green";
+        } catch (error) {
+          console.warn("createUserWithEmail:failure", error);
+          message.textContent = "Authentication failed: " + error.message;
+          message.style.color = "red";
+        }
+      }
+    };
+  </script>
+
+</body>
+</html>
